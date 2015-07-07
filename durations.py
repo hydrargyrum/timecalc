@@ -150,47 +150,47 @@ class Parser:
 
 
 dur_text_re = re.compile(
-"(?:"
-	"(?P<years>\d+)"
-	"\s*"
-	"(?:yrs|yr|year|years|y)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<months>\d+)"
-	"\s*"
-	"(?:mon|mons|month|months)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<weeks>\d+)"
-	"\s*"
-	"(?:w|wk|wks|week|weeks)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<days>\d+)"
-	"\s*"
-	"(?:d|day|days)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<hours>\d+)"
-	"\s*"
-	"(?:h|hr|hrs|hour|hours)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<minutes>\d+)"
-	"\s*"
-	"(?:m|min|mins|minute|minutes)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<seconds>\d+)"
-	"\s*"
-	"(?:s|sec|secs|second|seconds)"
-	"(?:[,\s]\s*|$)"
-")|(?:"
-	"(?P<milliseconds>\d+)"
-	"\s*"
-	"(?:ms|milli|millis|millisecond|milliseconds)"
-	"(?:[,\s]\s*|$)"
-")")
+r"(?:"
+	r"(?P<years>\d+)"
+	r"\s*"
+	r"(?:yrs|yr|year|years|y)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<months>\d+)"
+	r"\s*"
+	r"(?:mon|mons|month|months)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<weeks>\d+)"
+	r"\s*"
+	r"(?:w|wk|wks|week|weeks)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<days>\d+)"
+	r"\s*"
+	r"(?:d|day|days)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<hours>\d+)"
+	r"\s*"
+	r"(?:h|hr|hrs|hour|hours)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<minutes>\d+)"
+	r"\s*"
+	r"(?:m|min|mins|minute|minutes)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<seconds>\d+)"
+	r"\s*"
+	r"(?:s|sec|secs|second|seconds)"
+	r"(?:[,\s]\s*|$)"
+r")|(?:"
+	r"(?P<milliseconds>\d+)"
+	r"\s*"
+	r"(?:ms|milli|millis|millisecond|milliseconds)"
+	r"(?:[,\s]\s*|$)"
+r")")
 
 
 duration_re = re.compile("(?P<duration>%s)" % dur_text_re.pattern)
@@ -279,7 +279,7 @@ class Duration:
 		return d
 
 
-op_re = re.compile(r"(?P<op>[-+*()])\s*")
+op_re = re.compile(r"(?P<op>[-+*()])")
 
 class Operator:
 	type = 'operator'
@@ -337,14 +337,14 @@ class Factor:
 		return '<Factor=%s>' % self.factor
 
 date_re = re.compile(
-"(?P<dt_day>"
-	"(?P<date_lit>today)|"
-	"(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})"
-")")
+r"(?P<dt_day>"
+	r"(?P<date_lit>today)|"
+	r"(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})"
+r")")
 time_re = re.compile(
-"(?P<dt_time>"
-	"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?\s*(?P<ampm>am|pm)"
-")")
+r"(?P<dt_time>"
+	r"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?\s*(?P<ampm>am|pm)"
+r")")
 
 datetime_re = re.compile(r'(?P<datetime>%s|%s)' % (date_re.pattern, time_re.pattern))
 
@@ -447,7 +447,7 @@ class Datetime:
 	def __repr__(self):
 		return '<Datetime %r>' % self.datetime()
 
-whitespace_re = re.compile('(?P<ws>\s+)')
+whitespace_re = re.compile(r'(?P<ws>\s+)')
 
 full_re = re.compile('|'.join([datetime_re.pattern, duration_re.pattern, factor_re.pattern, op_re.pattern, whitespace_re.pattern]))
 
