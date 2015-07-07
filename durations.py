@@ -56,9 +56,9 @@ def tweak_dict(d):
 			del d[k]
 
 	for k in d.keys():
-		mtc = re.search(r'_\d$', k)
+		mtc = re.match(r'(.*)_\d$', k)
 		if mtc:
-			newkey = mtc.expand('')
+			newkey = mtc.expand(r'\1')
 			d[newkey] = d[k]
 			del d[k]
 	return d
@@ -343,8 +343,7 @@ date_re = re.compile(
 ")")
 time_re = re.compile(
 "(?P<dt_time>"
-	"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?|"
-	"(?P<hour_2>\d{1,2})(?::(?P<minute_2>\d{1,2}))?\s*(?P<ampm>am|pm)"
+	"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?\s*(?P<ampm>am|pm)"
 ")")
 
 datetime_re = re.compile(r'(?P<datetime>%s|%s)' % (date_re.pattern, time_re.pattern))
