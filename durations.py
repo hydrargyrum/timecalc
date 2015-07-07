@@ -75,7 +75,7 @@ class ExtraDataException(ParserException):
 		ParserException.__init__(self, *a, **kw)
 		self.message = 'Expected no tokens after token %s but got %s' % (self.after_token, self.bad_token)
 
-class UnexpectedTokenException(ParserException):
+class SyntaxError(ParserException):
 	pass
 
 class BadOperandException(ParserException):
@@ -340,12 +340,12 @@ date_re = re.compile(
 "(?P<dt_day>"
 	"(?P<date_lit>today)|"
 	"(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})"
-")\s*")
+")")
 time_re = re.compile(
 "(?P<dt_time>"
 	"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?|"
 	"(?P<hour_2>\d{1,2})(?::(?P<minute_2>\d{1,2}))?\s*(?P<ampm>am|pm)"
-")\s*")
+")")
 
 datetime_re = re.compile(r'(?P<datetime>%s|%s)' % (date_re.pattern, time_re.pattern))
 
@@ -448,8 +448,9 @@ class Datetime:
 	def __repr__(self):
 		return '<Datetime %r>' % self.datetime()
 
+whitespace_re = re.compile('(?P<ws>\s+)')
 
-full_re = re.compile('|'.join([datetime_re.pattern, duration_re.pattern, factor_re.pattern, op_re.pattern]))
+full_re = re.compile('|'.join([datetime_re.pattern, duration_re.pattern, factor_re.pattern, op_re.pattern, whitespace_re.pattern]))
 
 def gen_token(tok):
 	if tok.get('duration'):
@@ -460,13 +461,28 @@ def gen_token(tok):
 		return Factor(tok)
 	elif tok.get('datetime'):
 		return Datetime(tok)
-	assert False
+	raise NotImplementedError()
 
 
 def main():
 	tokens = []
-	for mtc in full_re.finditer(sys.argv[1]):
-		tokens.append(gen_token(mtc.groupdict()))
+	start = 0
+	input = sys.argv[1]
+
+	while start < len(input):
+		mtc = full_re.match(input, start)
+		if mtc:
+			if not mtc.group('ws'):
+				token = gen_token(mtc.groupdict())
+				tokens.append(token)
+			assert mtc.start() != mtc.end()
+			start = mtc.end()
+		else:
+			last = None
+			if len(tokens):
+				last = tokens[-1]
+			raise SyntaxError(last, input[start:])
+
 	res = Parser(tokens).parse()
 	if res.type == 'operator':
 		res = res.apply()
