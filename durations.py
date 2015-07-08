@@ -520,6 +520,8 @@ def do_one(instring):
 		print '\n'.join(e.location_str())
 
 def repl():
+	import readline
+
 	while True:
 		try:
 			instring = raw_input('> ')
