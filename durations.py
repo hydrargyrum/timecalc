@@ -533,12 +533,12 @@ def gen_token(mtc):
 	raise NotImplementedError()
 
 
-def do_apply(input):
+def do_apply(instring):
 	tokens = []
 	start = 0
 
-	while start < len(input):
-		mtc = full_re.match(input, start)
+	while start < len(instring):
+		mtc = full_re.match(instring, start)
 		if mtc:
 			if not mtc.group('ws'):
 				token = gen_token(mtc)
@@ -557,14 +557,33 @@ def do_apply(input):
 
 	print res
 
-def main():
-	input = sys.argv[1]
-
+def do_one(instring):
 	try:
-		do_apply(input)
+		do_apply(instring)
 	except ParserException as e:
 		print e
 		print '\n'.join(e.location_str())
+
+def repl():
+	while True:
+		try:
+			instring = raw_input('> ')
+		except (KeyboardInterrupt, EOFError):
+			print
+			return
+		if not instring:
+			continue
+
+		do_one(instring)
+
+def main():
+	if len(sys.argv) == 1:
+		repl()
+	elif len(sys.argv) == 2:
+		do_one(sys.argv[1])
+	else:
+		print >> sys.stderr, 'usage: %s [EXPR]' % sys.argv[0]
+		sys.exit(1)
 
 if __name__ == '__main__':
 	main()
