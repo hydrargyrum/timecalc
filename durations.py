@@ -67,27 +67,58 @@ def tweak_dict(d):
 class ParserException(Exception):
 	def __init__(self, after_token=None, bad_token=None):
 		Exception.__init__(self)
-		self.after_token = None
-		self.bad_token = None
+		self.after_token = after_token
+		self.bad_token = bad_token
+
+	def location_str(self):
+		if self.after_token and self.after_token.mtc:
+			mtc = self.after_token.mtc
+			p1 = mtc.string[max(0, mtc.end() - 15):mtc.end()]
+			if mtc.end() - 15 > 0:
+				p1 = '...' + p1
+			p2 = mtc.string[mtc.end():mtc.end() + 15]
+			if mtc.end() + 15 < len(mtc.string):
+				p2 = p2 + '...'
+			return (p1 + p2, len(p1) * ' ' + '^')
+
+		return ()
 
 class ExtraDataException(ParserException):
 	def __init__(self, *a, **kw):
 		ParserException.__init__(self, *a, **kw)
-		self.message = 'Expected no tokens after token %s but got %s' % (self.after_token, self.bad_token)
+
+	def __str__(self):
+		return 'Expected no more tokens after token %r but got %r' % (self.after_token, self.bad_token)
+
+	def short_msg(self):
+		return 'Expected no more tokens'
 
 class SyntaxError(ParserException):
-	pass
+	def __str__(self):
+		return 'Syntax error after token %r' % self.after_token
 
 class BadOperandException(ParserException):
 	def __init__(self, operator=None, *a, **kw):
 		ParserException.__init__(self, *a, **kw)
 		self.operator = operator
-		self.message = 'Unsupported operator %r between %s and %s' % (self.operator, self.after_token, self.bad_token)
+
+	def __str__(self):
+		return 'Unsupported operator %r between %r and %r' % (self.operator, self.after_token, self.bad_token)
 
 class CombinedException(ParserException):
 	def __init__(self, *a, **kw):
 		ParserException.__init__(self, *a, **kw)
-		self.message = 'Cannot combine 2 similar %s items: %s and %s' % (self.after_token.type, self.after_token, self.bad_token)
+
+	def __str__(self):
+		return 'Cannot combine 2 similar %s items: %r and %r' % (self.after_token.type, self.after_token, self.bad_token)
+
+class MissingToken(ParserException):
+	def __str__(self):
+		return 'Unexpected end of input after %r' % self.after_token
+
+class UnexpectedTokenType(ParserException):
+	def __str__(self):
+		return 'Unexpected token type after %r: %r' % (self.after_token, self.bad_token)
 
 
 class Parser:
@@ -100,12 +131,19 @@ class Parser:
 			raise ExtraDataException(self.tokens[end - 1], self.tokens[end])
 		return e
 
+	def _check_eof(self, start, end):
+		if start >= end:
+			raise MissingToken()
+
 	def parse_expr(self, start, end):
 		t, t_end = self.parse_term(start, end)
-		if not len(self.tokens[t_end:]):
+		if t_end >= end:
 			return t, t_end
 		elif self.tokens[t_end].type != 'operator' or self.tokens[t_end].op not in '+-':
 			return t, t_end
+
+		if t_end + 1 >= end:
+			raise MissingToken(self.tokens[t_end])
 
 		e, e_end = self.parse_expr(t_end + 1, end)
 		op = self.tokens[t_end]
@@ -114,10 +152,13 @@ class Parser:
 
 	def parse_term(self, start, end):
 		f, f_end = self.parse_factor(start, end)
-		if not len(self.tokens[f_end:]):
+		if f_end >= end:
 			return f, f_end
 		elif self.tokens[f_end].type != 'operator' or self.tokens[f_end].op != '*':
 			return f, f_end
+
+		if f_end + 1 >= end:
+			raise MissingToken(self.tokens[f_end])
 
 		t, t_end = self.parse_factor(f_end + 1, end)
 		op = self.tokens[f_end]
@@ -126,8 +167,18 @@ class Parser:
 
 	def parse_factor(self, start, end):
 		if self.tokens[start].type == 'operator' and self.tokens[start].op == '(':
+
+			if start + 1 >= end:
+				raise MissingToken(self.tokens[start])
+
 			e, e_end = self.parse_expr(start + 1, end)
-			assert self.tokens[e_end].type == 'operator' and self.tokens[e_end].op == ')'
+
+			if e_end >= end:
+				raise MissingToken(self.tokens[e_end - 1])
+
+			if self.tokens[e_end].type != 'operator' or self.tokens[e_end].op != ')':
+				raise UnexpectedTokenType(self.tokens[e_end - 1], self.tokens[e_end])
+
 			return e, e_end + 1
 		elif self.tokens[start].type == 'duration':
 			durations = []
@@ -199,10 +250,10 @@ class Duration:
 	units = 'years months weeks days hours minutes seconds milliseconds'.split()
 	type = 'duration'
 
-	def __init__(self, d=None):
-		if not d:
-			d = {}
-		d = tweak_dict(d)
+	def __init__(self, d=None, mtc=None):
+		self.mtc = mtc
+
+		d = tweak_dict(d or {})
 
 		self.items = {}
 		for unit in self.units:
@@ -295,7 +346,8 @@ op_re = re.compile(r"(?P<op>[-+*()])")
 class Operator:
 	type = 'operator'
 
-	def __init__(self, d):
+	def __init__(self, d, mtc=None):
+		self.mtc = mtc
 		self.op = d['op']
 		self.operands = []
 
@@ -323,7 +375,8 @@ factor_re = re.compile(r"(?P<factor>\d+)")
 class Factor:
 	type = 'factor'
 
-	def __init__(self, d=None):
+	def __init__(self, d=None, mtc=None):
+		self.mtc = mtc
 		d = d or {}
 		self.factor = float(d.get('factor'))
 
@@ -363,7 +416,9 @@ class Datetime:
 	type = 'datetime'
 	units = 'year month day hour minute second'.split()
 
-	def __init__(self, d=None):
+	def __init__(self, d=None, mtc=None):
+		self.mtc = mtc
+
 		d = tweak_dict(d or {})
 
 		self.items = {}
@@ -459,34 +514,34 @@ class Datetime:
 		return str(self.datetime())
 
 	def __repr__(self):
-		return '<Datetime %r>' % self.datetime()
+		return '<Datetime %s>' % self.datetime()
 
 whitespace_re = re.compile(r'(?P<ws>\s+)')
 
 full_re = re.compile('|'.join([datetime_re.pattern, duration_re.pattern, factor_re.pattern, op_re.pattern, whitespace_re.pattern]))
 
-def gen_token(tok):
+def gen_token(mtc):
+	tok = mtc.groupdict()
 	if tok.get('duration'):
-		return Duration(tok)
+		return Duration(tok, mtc)
 	elif tok.get('op'):
-		return Operator(tok)
+		return Operator(tok, mtc)
 	elif tok.get('factor'):
-		return Factor(tok)
+		return Factor(tok, mtc)
 	elif tok.get('datetime'):
-		return Datetime(tok)
+		return Datetime(tok, mtc)
 	raise NotImplementedError()
 
 
-def main():
+def do_apply(input):
 	tokens = []
 	start = 0
-	input = sys.argv[1]
 
 	while start < len(input):
 		mtc = full_re.match(input, start)
 		if mtc:
 			if not mtc.group('ws'):
-				token = gen_token(mtc.groupdict())
+				token = gen_token(mtc)
 				tokens.append(token)
 			assert mtc.start() != mtc.end()
 			start = mtc.end()
@@ -502,6 +557,14 @@ def main():
 
 	print res
 
+def main():
+	input = sys.argv[1]
+
+	try:
+		do_apply(input)
+	except ParserException as e:
+		print e
+		print '\n'.join(e.location_str())
 
 if __name__ == '__main__':
 	main()
