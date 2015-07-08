@@ -291,8 +291,10 @@ class Duration:
 			raise BadOperandException('*', self, other)
 
 		d = Duration()
-		for unit in self.units:
-			d.items[unit] = self.items[unit] * other.factor
+#		for unit in self.units:
+#			d.items[unit] = self.items[unit] * other.factor
+		delta = self.timedelta()
+		d.set_timedelta(datetime.timedelta(delta.days * other.factor, delta.seconds * other.factor, delta.microseconds * other.factor))
 		return d
 
 
