@@ -3,53 +3,6 @@ import datetime
 import re
 import sys
 
-def duractiondict_to_seconds(d):
-	get = lambda k: d.get(k, 0)
-	days = get('days') + get('weeks') * 7 + get('months') * 30 + get('years') * 365
-	secs = get('seconds') + get('minutes') * 60 + get('hours') * 3600 + days * 86400
-	return secs + get('milliseconds') / 1000.
-
-
-seconds_units = dict(seconds=1, minutes=60, hours=60*60, days=24*60*60, weeks=24*60*60*7, months=int(24*60*60*365.25/12), years=int(24*60*365.25))
-
-def duractiondict_to_seconds_alt(d):
-	month_s = int(86400 * 365.25 / 12)
-	get = lambda k: d.get(k, 0)
-	days = get('days') + get('weeks') * 7
-	secs = get('seconds') + get('minutes') * 60 + get('hours') * 3600 + days * 86400 + get('years') * month_s * 12 + get('months') * month_s
-	return secs + get('milliseconds') / 1000.
-
-def duractiondict_to_seconds_alt(d):
-	total = sum(d[k] * seconds_units[k] for k in d)
-	return total + d.get('milliseconds', 0) / 1000.
-
-def seconds_to_durationdict(secs):
-	import math
-	result = {}
-	for unit in 'years months weeks days hours minutes'.split():
-		ratio, secs = divmod(secs, seconds_units[unit])
-		if ratio >= 1:
-			result[unit] = ratio
-
-	millis_s, secs = math.modf(secs)
-	if secs:
-		result['seconds'] = int(secs)
-	if millis_s:
-		result['milliseconds'] = int(millis_s * 1000)
-
-	return result
-
-def duractiondict_to_string(d):
-	strings = []
-	for unit in 'years months weeks days hours minutes seconds milliseconds'.split():
-		if unit in d:
-			if d[unit] > 1:
-				strings.append('%d %s' % (d[unit], unit))
-			else:
-				strings.append('%d %s' % (d[unit], unit[:-1]))
-	return ' '.join(strings)
-
-
 def tweak_dict(d):
 	for k in d.keys():
 		if d[k] is None:
