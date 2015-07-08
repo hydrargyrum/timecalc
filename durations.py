@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# license: this file is licensed under the WTFPLv2 license (see COPYING.wtfpl)
 
 import datetime
 import re
