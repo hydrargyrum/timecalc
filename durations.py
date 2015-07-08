@@ -473,7 +473,7 @@ class Datetime:
 
 whitespace_re = re.compile(r'(?P<ws>\s+)')
 
-full_re = re.compile('|'.join([datetime_re.pattern, duration_re.pattern, factor_re.pattern, op_re.pattern, whitespace_re.pattern]))
+full_re = re.compile('|'.join([duration_re.pattern, datetime_re.pattern, factor_re.pattern, op_re.pattern, whitespace_re.pattern]))
 
 def gen_token(mtc):
 	tok = mtc.groupdict()
