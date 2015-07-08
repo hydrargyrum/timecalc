@@ -508,7 +508,7 @@ def do_apply(instring):
 			last = None
 			if len(tokens):
 				last = tokens[-1]
-			raise SyntaxError(last, input[start:])
+			raise SyntaxError(last)
 
 	res = Parser(tokens).parse()
 	if res.type == 'operator':
