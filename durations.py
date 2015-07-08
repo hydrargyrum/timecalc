@@ -1,7 +1,7 @@
 
-import sys
-import re
 import datetime
+import re
+import sys
 
 def duractiondict_to_seconds(d):
 	get = lambda k: d.get(k, 0)
@@ -265,6 +265,17 @@ class Duration:
 			new.items[unit] = self.items.get(unit) + other.items.get(unit)
 		return new
 
+	def _plural(self, q, u):
+		if q == 1:
+			u = u[:-1]
+		return '%s %s' % (q, u)
+
+	def __str__(self):
+		prefix = ''
+		if self.timedelta() < datetime.timedelta():
+			prefix = '- '
+		return '%s%s' % (prefix, ', '.join(self._plural(abs(self.items[unit]), unit) for unit in self.units if self.items[unit]))
+
 	def __repr__(self):
 		parts = ['%s %s' % (self.items.get(u), u) for u in self.units if self.items.get(u)]
 		return '<Duration %s>' % ', '.join(parts)
@@ -444,6 +455,9 @@ class Datetime:
 
 		raise BadOperandException('-', self, other)
 
+	def __str__(self):
+		return str(self.datetime())
+
 	def __repr__(self):
 		return '<Datetime %r>' % self.datetime()
 
@@ -485,10 +499,8 @@ def main():
 	res = Parser(tokens).parse()
 	if res.type == 'operator':
 		res = res.apply()
-	if res.type == 'datetime':
-		print str(res.datetime())
-	else:
-		print res
+
+	print res
 
 
 if __name__ == '__main__':
