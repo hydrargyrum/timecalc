@@ -354,7 +354,7 @@ r"(?P<dt_day>"
 r")")
 time_re = re.compile(
 r"(?P<dt_time>"
-	r"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?\s*(?P<ampm>am|pm)"
+	r"(?P<hour>\d{2})(?P<_timesep>:?)(?P<minute>\d{2})(?:(?P=_timesep)(?P<second>\d{2}))?\s*(?P<ampm>am|pm)?"
 r")")
 
 datetime_re = re.compile(r'(?P<datetime>%s|%s)' % (date_re.pattern, time_re.pattern))
