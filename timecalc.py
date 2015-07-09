@@ -359,7 +359,7 @@ class Factor:
 
 date_re = re.compile(
 r"(?P<dt_day>"
-	r"(?P<date_lit>today)|"
+	r"(?P<date_lit>today|now|epoch)|"
 	r"(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})"
 r")")
 time_re = re.compile(
@@ -383,14 +383,22 @@ class Datetime:
 		d = tweak_dict(d or {})
 
 		self.items = {}
-		for unit in self.units:
-			self.items[unit] = int(d.get(unit, 0))
-		ampm = d.get('ampm')
-		if ampm:
-			if ampm == 'am' and self.items['hour'] == 12:
-				self.items['hour'] = 0
-			elif ampm == 'pm' and self.items['hour'] != 12:
-				self.items['hour'] += 12
+
+		if d.get('date_lit') == 'now':
+			self.set_datetime(datetime.datetime.now())
+		elif d.get('date_lit') == 'today':
+			self.set_datetime(datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+		elif d.get('date_lit') == 'epoch':
+			self.set_datetime(datetime.datetime(1970, 1, 1))
+		else:
+			for unit in self.units:
+				self.items[unit] = int(d.get(unit, 0))
+			ampm = d.get('ampm')
+			if ampm:
+				if ampm == 'am' and self.items['hour'] == 12:
+					self.items['hour'] = 0
+				elif ampm == 'pm' and self.items['hour'] != 12:
+					self.items['hour'] += 12
 
 	@classmethod
 	def combine(cls, a, b):
