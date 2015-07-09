@@ -413,35 +413,17 @@ class Datetime:
 
 	def __add__(self, other):
 		if other.type == 'duration':
-			return self._add_duration(other, True)
+			new = Datetime()
+			new.set_datetime(self.datetime() + other.timedelta())
+			return new
 
 		raise BadOperandException('+', self, other)
 
-	def _add_duration(self, other, positive):
-			new = Datetime()
-			dt = self.datetime()
-			delta_args = {}
-			for unit in ('weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds'):
-				delta_args[unit] = other.items.get(unit)
-			delta = datetime.timedelta(**delta_args)
-
-			if positive:
-				dt += delta
-				year, month = divmod(dt.month + other.items.get('months') - 1, 12)
-				year += dt.year + other.items.get('years')
-			else:
-				dt -= delta
-				year, month = divmod(dt.month - other.items.get('months') - 1, 12)
-				year += dt.year - other.items.get('years')
-
-			dt = dt.replace(year=int(year), month=int(month + 1))
-			new.set_datetime(dt)
-			return new
-
-
 	def __sub__(self, other):
 		if other.type == 'duration':
-			return self._add_duration(other, False)
+			new = Datetime()
+			new.set_datetime(self.datetime() - other.timedelta())
+			return new
 		elif other.type == 'datetime':
 			d_self = self.datetime()
 			m_self = d_self.year * 12 + d_self.month
