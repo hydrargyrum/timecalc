@@ -4,6 +4,7 @@
 import datetime
 import re
 import sys
+import unittest
 
 def tweak_dict(d):
 	for k in d.keys():
@@ -506,11 +507,11 @@ def do_apply(instring):
 	if res.type == 'operator':
 		res = res.apply()
 
-	print res
+	return res
 
 def do_one(instring):
 	try:
-		do_apply(instring)
+		print do_apply(instring)
 	except ParserException as e:
 		print e
 		print '\n'.join(e.location_str())
@@ -537,6 +538,42 @@ def main():
 	else:
 		print >> sys.stderr, 'usage: %s [EXPR]' % sys.argv[0]
 		sys.exit(1)
+
+
+class TestParseMethods(unittest.TestCase):
+	def test_1(self):
+		DT = datetime.datetime
+		TD = datetime.timedelta
+
+		self.assertEqual(do_apply('2015/07/09').datetime(), DT(2015, 7, 9))
+		self.assertEqual(do_apply('2015/07/09 00:00').datetime(), DT(2015, 7, 9))
+		self.assertEqual(do_apply('2015/07/09 01:45').datetime(), DT(2015, 7, 9, 1, 45))
+		self.assertEqual(do_apply('2015/07/09 14:30').datetime(), DT(2015, 7, 9, 14, 30))
+		self.assertEqual(do_apply('2015/07/09 2:15pm').datetime(), DT(2015, 7, 9, 14, 15))
+		self.assertEqual(do_apply('2015/07/09 3am').datetime(), DT(2015, 7, 9, 3))
+		self.assertEqual(do_apply('2015/07/09 12am').datetime(), DT(2015, 7, 9))
+		self.assertEqual(do_apply('2015/07/09 12pm').datetime(), DT(2015, 7, 9, 12))
+
+		self.assertEqual(do_apply('now').datetime(), DT.now().replace(microsecond=0))
+		self.assertEqual(do_apply('today').datetime(), DT.combine(datetime.date.today(), datetime.time()).replace(microsecond=0))
+		self.assertEqual(do_apply('epoch').datetime(), DT(1970, 1, 1))
+
+		self.assertEqual(do_apply('1 second').timedelta(), TD(seconds=1))
+		self.assertEqual(do_apply('86410 seconds').timedelta(), TD(days=1, seconds=10))
+		self.assertEqual(do_apply('1 minute').timedelta(), TD(seconds=60))
+		self.assertEqual(do_apply('1 hour').timedelta(), TD(seconds=3600))
+		self.assertEqual(do_apply('2 hours').timedelta(), TD(seconds=2 * 3600))
+		self.assertEqual(do_apply('1 day').timedelta(), TD(days=1))
+		self.assertEqual(do_apply('1 week').timedelta(), TD(days=7))
+		self.assertEqual(do_apply('1 month').timedelta(), TD(days=30))
+		self.assertEqual(do_apply('1 year').timedelta(), TD(days=365))
+		self.assertEqual(do_apply('1 hour, 1 second').timedelta(), TD(seconds=3601))
+
+		self.assertEqual(do_apply('3 * 1 second').timedelta(), TD(seconds=3))
+		self.assertEqual(do_apply('1 second * 4').timedelta(), TD(seconds=4))
+		self.assertEqual(do_apply('2 hours * 4').timedelta(), TD(seconds=8 * 3600))
+		self.assertEqual(do_apply('1 second + 2 hours').timedelta(), TD(seconds=7201))
+
 
 if __name__ == '__main__':
 	main()
