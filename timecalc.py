@@ -410,8 +410,18 @@ class Datetime:
 			res.items[unit] = a.items.get(unit) + b.items.get(unit)
 		return res
 
+	def date(self):
+		return datetime.date(self.items['year'], self.items['month'], self.items['day'])
+
+	def time(self):
+		return datetime.time(self.items['hour'], self.items['minute'], self.items['second'])
+
 	def datetime(self):
-		return datetime.datetime(self.items['year'], self.items['month'], self.items['day'], self.items['hour'], self.items['minute'], self.items['second'])
+		if self.items['year'] == self.items['month'] == self.items['day'] == 0:
+			return datetime.datetime.combine(datetime.date.today(), self.time())
+		else:
+			return datetime.datetime.combine(self.date(), self.time())
+#(self.items['year'], self.items['month'], self.items['day'], self.items['hour'], self.items['minute'], self.items['second'])
 
 	def set_datetime(self, dt):
 		for unit in self.units:
