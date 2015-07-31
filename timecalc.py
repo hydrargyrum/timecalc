@@ -534,7 +534,11 @@ def main():
 	if len(sys.argv) == 1:
 		repl()
 	elif len(sys.argv) == 2:
-		do_one(sys.argv[1])
+		if sys.argv[1] == '--test':
+			del sys.argv[1]
+			unittest.main()
+		else:
+			do_one(sys.argv[1])
 	else:
 		print >> sys.stderr, 'usage: %s [EXPR]' % sys.argv[0]
 		sys.exit(1)
@@ -573,7 +577,6 @@ class TestParseMethods(unittest.TestCase):
 		self.assertEqual(do_apply('1 second * 4').timedelta(), TD(seconds=4))
 		self.assertEqual(do_apply('2 hours * 4').timedelta(), TD(seconds=8 * 3600))
 		self.assertEqual(do_apply('1 second + 2 hours').timedelta(), TD(seconds=7201))
-
 
 if __name__ == '__main__':
 	main()
