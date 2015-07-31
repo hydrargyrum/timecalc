@@ -555,38 +555,79 @@ def main():
 
 
 class TestParseMethods(unittest.TestCase):
-	def test_1(self):
+	def test_datetimes(self):
 		DT = datetime.datetime
-		TD = datetime.timedelta
 
 		self.assertEqual(do_apply('2015/07/09').datetime(), DT(2015, 7, 9))
-		self.assertEqual(do_apply('2015/07/09 00:00').datetime(), DT(2015, 7, 9))
-		self.assertEqual(do_apply('2015/07/09 01:45').datetime(), DT(2015, 7, 9, 1, 45))
+		self.assertEqual(do_apply('2015/07/10 00:00').datetime(), DT(2015, 7, 10))
+		self.assertEqual(do_apply('2015/07/11 01:45').datetime(), DT(2015, 7, 11, 1, 45))
 		self.assertEqual(do_apply('2015/07/09 14:30').datetime(), DT(2015, 7, 9, 14, 30))
 		self.assertEqual(do_apply('2015/07/09 2:15pm').datetime(), DT(2015, 7, 9, 14, 15))
 		self.assertEqual(do_apply('2015/07/09 3am').datetime(), DT(2015, 7, 9, 3))
 		self.assertEqual(do_apply('2015/07/09 12am').datetime(), DT(2015, 7, 9))
-		self.assertEqual(do_apply('2015/07/09 12pm').datetime(), DT(2015, 7, 9, 12))
+		self.assertEqual(do_apply('2015/07/31 12pm').datetime(), DT(2015, 7, 31, 12))
 
 		self.assertEqual(do_apply('now').datetime(), DT.now().replace(microsecond=0))
 		self.assertEqual(do_apply('today').datetime(), DT.combine(datetime.date.today(), datetime.time()).replace(microsecond=0))
 		self.assertEqual(do_apply('epoch').datetime(), DT(1970, 1, 1))
+
+	def test_durations(self):
+		TD = datetime.timedelta
 
 		self.assertEqual(do_apply('1 second').timedelta(), TD(seconds=1))
 		self.assertEqual(do_apply('86410 seconds').timedelta(), TD(days=1, seconds=10))
 		self.assertEqual(do_apply('1 minute').timedelta(), TD(seconds=60))
 		self.assertEqual(do_apply('1 hour').timedelta(), TD(seconds=3600))
 		self.assertEqual(do_apply('2 hours').timedelta(), TD(seconds=2 * 3600))
+		self.assertEqual(do_apply('36 hours').timedelta(), TD(days=1, seconds=12 * 3600))
 		self.assertEqual(do_apply('1 day').timedelta(), TD(days=1))
+		self.assertEqual(do_apply('30 days').timedelta(), TD(days=30))
 		self.assertEqual(do_apply('1 week').timedelta(), TD(days=7))
 		self.assertEqual(do_apply('1 month').timedelta(), TD(days=30))
 		self.assertEqual(do_apply('1 year').timedelta(), TD(days=365))
 		self.assertEqual(do_apply('1 hour, 1 second').timedelta(), TD(seconds=3601))
+		self.assertEqual(do_apply('1 year, 1 hour').timedelta(), TD(days=365, seconds=3600))
+		self.assertEqual(do_apply('1 year, 4 days').timedelta(), TD(days=369))
+		self.assertEqual(do_apply('1 year, 4 days, 36 hours, 42 seconds').timedelta(), TD(days=370, seconds=12 * 3600 + 42))
 
+	def test_duration_ops(self):
+		TD = datetime.timedelta
+
+		self.assertEqual(do_apply('1 second + 2 hours').timedelta(), TD(seconds=7201))
+		self.assertEqual(do_apply('1 hour, 1 second + 1 hour').timedelta(), TD(seconds=7201))
+		self.assertEqual(do_apply('1 hour + 1 hour, 1 second').timedelta(), TD(seconds=7201))
+		self.assertEqual(do_apply('2 hours - 1 hour, 1 second').timedelta(), TD(seconds=3599))
+		self.assertEqual(do_apply('0 hours').timedelta(), TD(seconds=0))
+#		self.assertEqual(do_apply('0 hours - 1 hour + 1 hour').timedelta(), TD(seconds=0))
 		self.assertEqual(do_apply('3 * 1 second').timedelta(), TD(seconds=3))
 		self.assertEqual(do_apply('1 second * 4').timedelta(), TD(seconds=4))
 		self.assertEqual(do_apply('2 hours * 4').timedelta(), TD(seconds=8 * 3600))
-		self.assertEqual(do_apply('1 second + 2 hours').timedelta(), TD(seconds=7201))
+		self.assertEqual(do_apply('4 * 1 hour + 1 hour').timedelta(), TD(seconds=5 * 3600))
+		self.assertEqual(do_apply('4 * 1 hour, 2 seconds').timedelta(), TD(seconds=4 * 3600 + 8))
+
+	def test_datetime_ops(self):
+		TD = datetime.timedelta
+
+		self.assertEqual(do_apply('2015/07/31 - 2015/07/30').timedelta(), TD(days=1))
+		self.assertEqual(do_apply('2015/07/15 - 2015/08/15').timedelta(), TD(days=-31))
+		self.assertEqual(do_apply('2015/07/15 12pm - 2015/08/15 00:00').timedelta(), TD(days=-30, seconds=-12 * 3600))
+		self.assertEqual(do_apply('2015/03/15 01:10 - 2015/02/15 23:20').timedelta(), TD(days=27, seconds=50 * 60 + 3600))
+		self.assertEqual(do_apply('23:20 - 01:10').timedelta(), TD(seconds=10 * 60 + 22 * 3600))
+		self.assertEqual(do_apply('01:10 - 23:20').timedelta(), TD(seconds=10 * -60 + 22 * -3600))
+		self.assertEqual(do_apply('1970/01/10 - epoch').timedelta(), TD(days=9))
+
+	def test_datetime_duration_ops(self):
+		DT = datetime.datetime
+		TD = datetime.timedelta
+
+		self.assertEqual(do_apply('2015/07/31 + 1 day').datetime(), DT(2015, 8, 1))
+		self.assertEqual(do_apply('2015/07/31 + 2 days').datetime(), DT(2015, 8, 2))
+		self.assertEqual(do_apply('2015/02/28 + 1 day').datetime(), DT(2015, 3, 1))
+		self.assertEqual(do_apply('2015/05/04 + 3 hours, 10 seconds').datetime(), DT(2015, 5, 4, 3, 0, 10))
+		self.assertEqual(do_apply('2015/05/04 + 3 hours + 10 seconds').datetime(), DT(2015, 5, 4, 3, 0, 10))
+		self.assertEqual(do_apply('2015/05/04 10:45 + 3 hours + 10 seconds').datetime(), DT(2015, 5, 4, 13, 45, 10))
+		#self.assertEqual(do_apply('2015/05/04 10:45 - 3 hours + 10 seconds').datetime(), DT(2015, 5, 4, 7, 45, 10))
+
 
 if __name__ == '__main__':
 	main()
