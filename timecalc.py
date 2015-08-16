@@ -106,8 +106,8 @@ class ParserException(Exception):
 			return self.snippet_str(self.after_token.match.string, self.after_token.match.end())
 
 	def __str__(self):
-		if exc:
-			reason = '%s: %s' % (self.reason, exc)
+		if self.exc:
+			reason = '%s: %s' % (self.reason, self.exc)
 		else:
 			reason = self.reason
 		return '\n'.join([reason, self.location_str()])
@@ -371,11 +371,17 @@ class ISO8601(Terminal):
 class Date(Terminal):
 	re = re.compile(r'(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})')
 
-	def value(self):
+	def _value(self):
 		y = int(self.d.get('year'))
 		m = int(self.d.get('month'))
 		d = int(self.d.get('day'))
 		return datetime.date(y, m, d)
+
+	def value(self):
+		try:
+			return self._value()
+		except ValueError, e:
+			raise InvalidDate(token=self, exc=e)
 
 @register
 class Time(Terminal):
@@ -388,7 +394,7 @@ class Time(Terminal):
 		\s*(?P<ampm_2>am|pm)
 	)''', re.X)
 
-	def value(self):
+	def _value(self):
 		h = int(self.d.get('hour', 0))
 		m = int(self.d.get('minute', 0))
 		s = int(self.d.get('second', 0))
@@ -400,6 +406,11 @@ class Time(Terminal):
 				h += 12
 		return datetime.time(h, m, s)
 
+	def value(self):
+		try:
+			return self._value()
+		except ValueError, e:
+			raise InvalidDate(token=self, exc=e)
 
 Comma = register(create_terminal(','))
 
