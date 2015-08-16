@@ -16,11 +16,13 @@ timecalc is a basic calculator for time and durations. It can:
 55 minutes, 45 seconds
 ```
 
-* multiply durations:
+* multiply/divide durations:
 
 ```
 > 40 mins * 4
 2 hours, 40 minutes
+> 1 day / 2
+12 hours
 ```
 
 * add durations to dates:
@@ -37,27 +39,103 @@ timecalc is a basic calculator for time and durations. It can:
 2015-07-08 08:00:00
 ```
 
-* subtract dates:
+* compute duration between two dates:
 
 ```
 > 2015/07/08 - 2015/07/06 12pm
 1 day, 12 hours
 ```
 
+* compute ratio of two durations:
+
+```
+> 1 day / 1 minute
+1440.0
+```
+
+
 * do all of the above at once:
 
 ```
-> 2 * ((100 days + 2015/07/08) - (2015/07/01 - 48 hours ))
+> 2 * ((100 days + 2015/07/08) - (2015/07/01 - 48 hours))
 7 months, 1 week, 5 days
 ```
 
-## invocation
+## Invocation
 
-If given an argument, timecalc will eval it and exit, else, it will start a REPL prompt to eval multiple expressions.
+If given an argument, timecalc will eval it and exit, else, it will start a REPL (Read-Eval-Print Loop) prompt to eval multiple expressions.
 
-## Known bugs
+## Formats
 
-Sometimes, the parser is a bit sloppy, parentheses can be added to group stuff, and spaces be added for better separation.
+### Grammar
+
+```
+digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+number ::= [ "-" ], digit, {digit}, [ ".", {digit} ];
+
+unit ::= "milliseconds" | "millisecond" | "ms" 
+       | "seconds" | "second" | "sec" | "secs" | "s"
+       | "minutes" | "minutes" | "mins" | "min"
+       | "hours" | "hour" | "hrs" | "hr"
+       | "days" | "day" | "d"
+       | "weeks" | "week" | "wks" | "wk" | "w"
+       | "months" | "month" | "mons" | "mon"
+       | "years" | "year" | "yrs" | "yr" | "y";
+duration ::= number, unit, { ",", number, unit };
+
+iso8601d ::= digit, digit, digit, digit, "-", digit, digit, "-", digit, digit (* YYYY-MM-DD *)
+           | digit, digit, digit, digit, "-", digit, digit, digit (* YYYY-DDD day in year *)
+           | digit, digit, digit, digit, "-W", digit, digit, "-", digit (* YYYY-Www-D week in year, day in week *)
+           | digit, digit, digit, digit, digit, digit, digit, digit (* YYYYMMDD *)
+           | digit, digit, digit, digit, digit, digit, digit (* YYYYDDD day in year *)
+           | digit, digit, digit, digit, digit, digit, digit (* YYYYwwD week in year, day in week *);
+iso8601t ::= "digit, digit, ":", digit, digit, [ ":", digit, digit ] (* HH:MM:SS *)
+           | "digit, digit, digit, digit, [ digit, digit ] (* HHMMSS *);
+iso8601 ::= iso8601d, [ ( "T" | ?whitespace? ), iso8601t ];
+
+date ::= digit, digit, digit, digit, ( "/" | "-" ), digit, [ digit ], ( "/", "-" ), digit, [ digit ];
+time ::= digit, [ digit ], ( "am" | "pm" )
+       | digit, [ digit ], ":", digit, [ digit ], [ ":", digit, [ digit ] ], [ "am" | "pm" ];
+
+datetime ::= date, [ time ] | [ date ], time | iso8601;
+
+factor ::= duration | datetime | number | "(", expression, ")";
+term ::= term, [ ( "*" | "/" ), factor ];
+expression ::= expression, [ ( "+" | "-" ), term ];
+```
+
+### Examples
+
+```
+now
+today
+epoch
+2015-01-01 01:23
+2015-01-01 12:34:56
+20150101T123456
+2015/01/01
+2015/01/01 13:34
+2015/01/01 1:34pm
+12:34
+3am
+1 day
+1y, 3w, 4hrs, 5s
+1 year, 2 months, 3 days, 4 weeks, 5 hours, 6 minutes, 7 seconds, 8 milliseconds
+```
+
+## FAQ
+
+* Q: Why does "1 year - 12 months" return "5 days"?
+* A: While this result is unsettling at first, the reason is understandable. timecalc considers 1 month to be equal to 30 days, so 12 months equal 360 days. Months are not equal, and computation could depend on the context, but the results would then be less unpredictable, so instead it is fixed.
+
+* Q: Are timezones handled?
+* A: Not yet. Using them will return a syntax error.
+
+* Q: Is the format YYYY/MM/DD or YYYY/DD/MM?
+* A: YYYY/MM/DD.
+
+* Q: When inputting date "20150101", it is parsed as number "20150101".
+* A: That's not a question, and that's effectively a number. To force a datetime form, use "20150101 00:00" instead.
 
 ## License
 
