@@ -46,13 +46,12 @@ timecalc is a basic calculator for time and durations. It can:
 1 day, 12 hours
 ```
 
-* compute ratio of two durations:
+* compute the ratio of two durations:
 
 ```
 > 1 day / 1 minute
 1440.0
 ```
-
 
 * do all of the above at once:
 
@@ -65,7 +64,7 @@ timecalc is a basic calculator for time and durations. It can:
 
 If given an argument, timecalc will eval it and exit, else, it will start a REPL (Read-Eval-Print Loop) prompt to eval multiple expressions.
 
-## Formats
+## Input format
 
 ### Grammar
 
@@ -126,10 +125,13 @@ epoch
 ## FAQ
 
 * Q: Why does "1 year - 12 months" return "5 days"?
-* A: While this result is unsettling at first, the reason is understandable. timecalc considers 1 month to be equal to 30 days, so 12 months equal 360 days. Months are not equal, and computation could depend on the context, but the results would then be less unpredictable, so instead it is fixed.
+* A: While this result is unsettling at first, the reason is understandable. timecalc considers 1 month to be equal to 30 days, thus 12 months equal 360 days. Months are not equal, and computation could depend on the context, but the results would then be less predictable, or at least questionable, so instead it is fixed to 30 days. Think "2015/01/31 + 1 month" or "2015/03/28 - 2015/02/28 + 2015/01/01".
 
 * Q: Are timezones handled?
 * A: Not yet. Using them will return a syntax error.
+
+* Q: Are leap seconds handled?
+* A: Not at all, and probably won't be. "2015/07/01 - 2015/06/30 23:59:59" returns "1 second".
 
 * Q: Is the format YYYY/MM/DD or YYYY/DD/MM?
 * A: YYYY/MM/DD.
