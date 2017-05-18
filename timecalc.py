@@ -48,7 +48,9 @@ def create_terminal(re_string):
 
 	return NewTerminal
 
+
 literal_re = re.escape
+
 
 def tweak_match_dict(d):
 	for k in list(d.keys()):
@@ -112,8 +114,10 @@ class ParserException(Exception):
 			reason = self.reason
 		return '\n'.join([reason, self.location_str()])
 
+
 class BadToken(ParserException):
 	reason = 'Unrecognized token'
+
 
 def do_lexer(text):
 	tokens = []
@@ -188,17 +192,22 @@ def rule(*syms):
 
 	return deco
 
+
 class BadRule(ParserException):
 	pass
+
 
 class BadSymbol(ParserException):
 	pass
 
+
 class ExtraTokensError(ParserException):
 	reason = 'Unexpected data after expression'
 
+
 class NotEnoughTokens(ParserException):
 	reason = 'Unexpected end of string'
+
 
 class ParserSyntaxError(ParserException):
 	reason = 'Unexpected symbol'
@@ -229,6 +238,7 @@ def parse_rule(syms, tokens, start):
 			raise ParserSyntaxError(token=tokens[start])
 		raise
 
+
 def parse_nonterm(nonterm, tokens, start):
 	lazy_replace = lambda t: t.lookup() if t.is_lazy else t
 
@@ -246,6 +256,7 @@ def parse_nonterm(nonterm, tokens, start):
 	else:
 		raise BadSymbol()
 	return start, cb(*parts)
+
 
 def do_parser(entry, tokens):
 	start, ast = parse_nonterm(entry, tokens, 0)
@@ -292,6 +303,7 @@ class Number(Terminal):
 	def __str__(self):
 		return str(self.value())
 
+
 @register
 class Unit(Terminal):
 	re = re.compile(
@@ -307,6 +319,7 @@ class Unit(Terminal):
 	def value(self):
 		return next(iter(self.d.keys()))
 
+
 @register
 class DatetimeLiteral(Terminal):
 	re = re.compile('(?P<lit>now|epoch)')
@@ -317,6 +330,7 @@ class DatetimeLiteral(Terminal):
 		elif self.d['lit'] == 'epoch':
 			return datetime.datetime(1970, 1, 1)
 
+
 @register
 class DateLiteral(Terminal):
 	re = re.compile('(?P<lit>today)')
@@ -324,6 +338,7 @@ class DateLiteral(Terminal):
 	def value(self):
 		if self.d['lit'] == 'today':
 			return datetime.date.today()
+
 
 @register
 class ISO8601(Terminal):
@@ -367,6 +382,7 @@ class ISO8601(Terminal):
 		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
 
+
 @register
 class Date(Terminal):
 	re = re.compile(r'(?P<year>\d{2,4})(?P<_datesep>[/-]?)(?P<month>\d{1,2})(?P=_datesep)(?P<day>\d{1,2})')
@@ -382,6 +398,7 @@ class Date(Terminal):
 			return self._value()
 		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
+
 
 @register
 class Time(Terminal):
@@ -412,10 +429,12 @@ class Time(Terminal):
 		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
 
+
 Comma = register(create_terminal(','))
 
 OpenParen = register(create_terminal(r'\('))
 CloseParen = register(create_terminal(r'\)'))
+
 
 @register
 class Minus(Terminal):
@@ -441,6 +460,7 @@ class Multiplication(Terminal):
 	def apply(left, right):
 		return left * right
 
+
 @register
 class Division(Terminal):
 	re = re.compile('/')
@@ -449,16 +469,19 @@ class Division(Terminal):
 	def apply(left, right):
 		return left / right
 
+
 @register
 class Whitespace(Terminal):
 	re = re.compile(r'\s+')
 	ignore = True
+
 
 @register
 class DurationPart(NonTerminal):
 	@rule(Number, Unit)
 	def r(n, u):
 		return (n, u)
+
 
 @register
 class DurationEx(NonTerminal):
@@ -469,6 +492,7 @@ class DurationEx(NonTerminal):
 	@rule()
 	def r1():
 		return []
+
 
 class Duration(object):
 	type = 'duration'
@@ -568,6 +592,7 @@ class DatetimeEx1(NonTerminal):
 	def r1():
 		pass
 
+
 @register
 class DatetimeEx2(NonTerminal):
 	@rule(Date)
@@ -581,6 +606,7 @@ class DatetimeEx2(NonTerminal):
 	@rule()
 	def r1():
 		pass
+
 
 @register
 class Datetime(NonTerminal):
@@ -652,6 +678,7 @@ class NumDuration(NonTerminal):
 	def r1():
 		return
 
+
 @register
 class Factor(NonTerminal):
 	@rule(Datetime)
@@ -670,6 +697,7 @@ class Factor(NonTerminal):
 	def r2(_, expr, __):
 		return expr
 
+
 @register
 class TermD(NonTerminal):
 	@rule(Multiplication, Factor, Lazy('TermD'))
@@ -684,6 +712,7 @@ class TermD(NonTerminal):
 	def r1():
 		pass
 
+
 def make_ast_lr(left, rest):
 	if not rest:
 		return left
@@ -692,11 +721,13 @@ def make_ast_lr(left, rest):
 	left = [op, left, right]
 	return make_ast_lr(left, rest)
 
+
 @register
 class Term(NonTerminal):
 	@rule(Factor, TermD)
 	def r(left, ted):
 		return make_ast_lr(left, ted)
+
 
 @register
 class ExpressionD(NonTerminal):
@@ -712,21 +743,26 @@ class ExpressionD(NonTerminal):
 	def r1():
 		pass
 
+
 @register
 class Expression(NonTerminal):
 	@rule(Term, ExpressionD)
 	def r(left, exd):
 		return make_ast_lr(left, exd)
 
+
 GRAMMAR_ENTRY = Expression
+
 
 class InvalidDate(ParserException):
 	reason = 'Cannot parse date'
+
 
 class BadOperand(ParserException):
 	def __init__(self, op, left, right):
 		ParserException.__init__(self, token=op)
 		self.reason = "Bad operands for '%s'" % op.match.group()
+
 
 class DuplicateUnit(ParserException):
 	reason = 'Unit is already used'
@@ -752,11 +788,13 @@ def compute_from_string(text):
 	ast = do_parser(GRAMMAR_ENTRY, tokens)
 	return do_compute(ast)
 
+
 def do_one(text):
 	try:
 		print(compute_from_string(text))
 	except ParserException as e:
 		print(e)
+
 
 def repl():
 	import readline
@@ -771,6 +809,7 @@ def repl():
 			continue
 
 		do_one(instring)
+
 
 def main():
 	if len(sys.argv) == 1:
