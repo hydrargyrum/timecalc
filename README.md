@@ -64,6 +64,9 @@ timecalc is a basic calculator for time and durations. It can:
 
 If given an argument, timecalc will eval it and exit, else, it will start a REPL (Read-Eval-Print Loop) prompt to eval multiple expressions.
 
+"-r" can be passed as argument to use dateutil's [relativedelta](http://dateutil.readthedocs.io/en/stable/relativedelta.html) for durations.
+This may give more natural results when using durations.
+
 ## Input format
 
 ### Grammar
@@ -125,7 +128,7 @@ epoch
 ## FAQ
 
 * Q: Why does "1 year - 12 months" return "5 days"?
-* A: While this result is unsettling at first, the reason is understandable. timecalc considers 1 month to be equal to 30 days, thus 12 months equal 360 days. Months are not equal, and computation could depend on the context, but the results would then be less predictable, or at least questionable, so instead it is fixed to 30 days. Think "2015/01/31 + 1 month" or "2015/03/28 - 2015/02/28 + 2015/01/01".
+* A: While this result is unsettling at first, the reason is understandable. timecalc considers 1 month to be equal to 30 days, thus 12 months equal 360 days. Months are not equal, and computation could depend on the context, but the results would then be less predictable, or at least questionable, so instead it is fixed to 30 days. Think "2015/01/31 + 1 month" or "2015/03/28 - 2015/02/28 + 2015/01/01". Using the "-r" flag can give more natural results ("0 seconds" in this case).
 
 * Q: Are timezones handled?
 * A: Not yet. Using them will return a syntax error.
