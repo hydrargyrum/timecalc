@@ -529,7 +529,7 @@ class BaseDuration(object):
 	def __str__(self):
 		items = self.delta2parts(self.delta)
 		parts = [self._plural(items[k], k) for k in items if items[k]]
-		return ', '.join(parts)
+		return ', '.join(parts) or '0 seconds'
 
 	@staticmethod
 	def _plural(val, unit):
