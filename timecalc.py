@@ -249,7 +249,10 @@ def parse_rule(syms, tokens, start):
 
 
 def parse_nonterm(nonterm, tokens, start):
-	lazy_replace = lambda t: t.lookup() if t.is_lazy else t
+	def lazy_replace(t):
+		if t.is_lazy:
+			return t.lookup()
+		return t
 
 	for rulename in sorted(dir(nonterm)):
 		cb = getattr(nonterm, rulename)
