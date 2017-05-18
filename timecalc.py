@@ -7,6 +7,15 @@ import re
 import sys
 from collections import OrderedDict
 
+HAS_RELATIVEDELTA = True
+try:
+	from dateutil.relativedelta import relativedelta
+except ImportError:
+	HAS_RELATIVEDELTA = False
+
+USE_RELATIVEDELTA = False
+
+
 # {{{ parser lib
 
 TERMINAL_CLASSES = []
@@ -494,15 +503,44 @@ class DurationEx(NonTerminal):
 		return []
 
 
-class Duration(object):
+class BaseDuration(object):
 	type = 'duration'
 
-	@staticmethod
-	def create(parts):
-		return Duration(Duration.parts2delta(parts))
+	@classmethod
+	def create(cls, parts):
+		return cls(cls.parts2delta(parts))
+
+	def __init__(self, delta):
+		self.delta = delta
+
+	def __add__(self, other):
+		if other.type == 'datetime':
+			return other + self
+		elif other.type == 'duration':
+			return Duration(self.delta + other.delta)
+
+	def __sub__(self, other):
+		if other.type == 'duration':
+			return Duration(self.delta - other.delta)
+
+	def __repr__(self):
+		return repr(self.delta2parts(self.delta))
+
+	def __str__(self):
+		items = self.delta2parts(self.delta)
+		parts = [self._plural(items[k], k) for k in items if items[k]]
+		return ', '.join(parts)
 
 	@staticmethod
-	def parts2delta(parts):
+	def _plural(val, unit):
+		if val == 1:
+			unit = unit[:-1]
+		return '%s %s' % (val, unit)
+
+
+class TimedeltaDuration(BaseDuration):
+	@classmethod
+	def parts2delta(cls, parts):
 		items = {}
 		for n, u in parts:
 			if u.value() in items:
@@ -513,8 +551,8 @@ class Duration(object):
 		seconds = items.get('hours', 0) * 3600 + items.get('minutes', 0) * 60 + items.get('seconds', 0)
 		return datetime.timedelta(days=days, seconds=seconds, microseconds=items.get('milliseconds', 0) * 1000)
 
-	@staticmethod
-	def delta2parts(delta):
+	@classmethod
+	def delta2parts(cls, delta):
 		items = OrderedDict()
 		factor = 1
 		if delta < datetime.timedelta():
@@ -538,26 +576,13 @@ class Duration(object):
 			items[unit] *= factor
 		return items
 
-	def __init__(self, delta):
-		self.delta = delta
-
-	def __add__(self, other):
-		if other.type == 'datetime':
-			return other + self
-		elif other.type == 'duration':
-			return Duration(self.delta + other.delta)
-
-	def __sub__(self, other):
-		if other.type == 'duration':
-			return Duration(self.delta - other.delta)
-
 	def __mul__(self, other):
 		if other.type == 'number':
 			v = other.value()
 			if not isinstance(v, float):
-				return Duration(self.delta * other.value())
+				return TimedeltaDuration(self.delta * other.value())
 			else:
-				return Duration(datetime.timedelta(seconds=self.delta.total_seconds() * v))
+				return TimedeltaDuration(datetime.timedelta(seconds=self.delta.total_seconds() * v))
 
 	def __truediv__(self, other):
 		if other.type == 'duration':
@@ -565,21 +590,43 @@ class Duration(object):
 			return Number(n=factor)
 		elif other.type == 'number':
 			v = float(other.value())
-			return Duration(datetime.timedelta(seconds=self.delta.total_seconds() / v))
+			return TimedeltaDuration(datetime.timedelta(seconds=self.delta.total_seconds() / v))
 
-	def __repr__(self):
-		return repr(self.delta2parts(self.delta))
 
-	@staticmethod
-	def _plural(val, unit):
-		if val == 1:
-			unit = unit[:-1]
-		return '%s %s' % (val, unit)
+class RelativedeltaDuration(BaseDuration):
+	@classmethod
+	def parts2delta(cls, parts):
+		items = {}
+		for n, u in parts:
+			if u.value() in items:
+				raise DuplicateUnit(token=u)
+			items[u.value()] = n.value()
 
-	def __str__(self):
-		items = self.delta2parts(self.delta)
-		parts = [self._plural(items[k], k) for k in items if items[k]]
-		return ', '.join(parts)
+		return relativedelta(**items)
+
+	@classmethod
+	def delta2parts(cls, delta):
+		items = OrderedDict()
+		for k in ('years', 'months', 'days', 'hours', 'minutes', 'seconds'):
+			v = getattr(delta, k, 0)
+			if v:
+				items[k] = v
+		return items
+
+	def __mul__(self, other):
+		if other.type == 'number':
+			return RelativedeltaDuration(self.delta * other.value())
+
+	def __truediv__(self, other):
+		if other.type == 'duration':
+			factor = self.delta.total_seconds() / other.delta.total_seconds()
+			return Number(n=factor)
+		elif other.type == 'number':
+			return RelativedeltaDuration(self.delta / other.value())
+
+
+
+Duration = TimedeltaDuration
 
 
 @register
@@ -812,9 +859,21 @@ def repl():
 
 
 def main():
-	if len(sys.argv) == 1:
-		repl()
-	elif len(sys.argv) == 2:
+	if len(sys.argv) <= 1:
+		return repl()
+	if sys.argv[1] == '-r':
+		if not HAS_RELATIVEDELTA:
+			print('Please install python-relativedelta', file=sys.stderr)
+			sys.exit(1)
+
+		del sys.argv[1]
+
+		global USE_RELATIVEDELTA, Duration
+
+		USE_RELATIVEDELTA = True
+		Duration = RelativedeltaDuration
+
+	if len(sys.argv) == 2:
 		do_one(sys.argv[1])
 	else:
 		print('usage: %s [EXPR]' % sys.argv[0], file=sys.stderr)
