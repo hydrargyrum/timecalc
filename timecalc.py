@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 # license: this file is licensed under the WTFPLv2 license (see COPYING.wtfpl)
 
@@ -51,11 +51,11 @@ def create_terminal(re_string):
 literal_re = re.escape
 
 def tweak_match_dict(d):
-	for k in d.keys():
+	for k in list(d.keys()):
 		if d[k] is None:
 			del d[k]
 
-	for k in d.keys():
+	for k in list(d.keys()):
 		mtc = re.match(r'(.*)_\d$', k)
 		if mtc:
 			newkey = mtc.expand(r'\1')
@@ -285,7 +285,7 @@ class Number(Terminal):
 		elif other.type == 'duration':
 			return other * self
 
-	def __div__(self, other):
+	def __truediv__(self, other):
 		if other.type == 'number':
 			return Number(n=self.value() / other.value())
 
@@ -305,7 +305,7 @@ class Unit(Terminal):
 	'(?P<years>years?|yrs?|y)')
 
 	def value(self):
-		return self.d.keys()[0]
+		return next(iter(self.d.keys()))
 
 @register
 class DatetimeLiteral(Terminal):
@@ -364,7 +364,7 @@ class ISO8601(Terminal):
 	def value(self):
 		try:
 			return self._value()
-		except ValueError, e:
+		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
 
 @register
@@ -380,7 +380,7 @@ class Date(Terminal):
 	def value(self):
 		try:
 			return self._value()
-		except ValueError, e:
+		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
 
 @register
@@ -409,7 +409,7 @@ class Time(Terminal):
 	def value(self):
 		try:
 			return self._value()
-		except ValueError, e:
+		except ValueError as e:
 			raise InvalidDate(token=self, exc=e)
 
 Comma = register(create_terminal(','))
@@ -535,7 +535,7 @@ class Duration(object):
 			else:
 				return Duration(datetime.timedelta(seconds=self.delta.total_seconds() * v))
 
-	def __div__(self, other):
+	def __truediv__(self, other):
 		if other.type == 'duration':
 			factor = self.delta.total_seconds() / other.delta.total_seconds()
 			return Number(n=factor)
@@ -639,7 +639,7 @@ class Datetime(NonTerminal):
 	def __mul__(self, other):
 		pass
 
-	def __div__(self, other):
+	def __truediv__(self, other):
 		pass
 
 
@@ -754,18 +754,18 @@ def compute_from_string(text):
 
 def do_one(text):
 	try:
-		print compute_from_string(text)
+		print(compute_from_string(text))
 	except ParserException as e:
-		print e
+		print(e)
 
 def repl():
 	import readline
 
 	while True:
 		try:
-			instring = raw_input('> ')
+			instring = input('> ')
 		except (KeyboardInterrupt, EOFError):
-			print
+			print()
 			return
 		if not instring:
 			continue
@@ -778,7 +778,7 @@ def main():
 	elif len(sys.argv) == 2:
 		do_one(sys.argv[1])
 	else:
-		print >> sys.stderr, 'usage: %s [EXPR]' % sys.argv[0]
+		print('usage: %s [EXPR]' % sys.argv[0], file=sys.stderr)
 		sys.exit(1)
 
 # }}}
