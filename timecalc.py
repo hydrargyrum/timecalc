@@ -2,6 +2,7 @@
 # coding: utf-8
 # license: this file is licensed under the WTFPLv2 license (see COPYING.wtfpl)
 
+import argparse
 import datetime
 import re
 import sys
@@ -794,14 +795,18 @@ def compute_from_string(text):
 	return do_compute(ast)
 
 
-def do_one(text):
+def do_one(text, **kwargs):
 	try:
-		print(compute_from_string(text))
+		v = compute_from_string(text)
 	except ParserException as e:
 		print(e)
+	else:
+		if v.type == 'duration' and not kwargs.get('exact_durations', False):
+			v = v.approx()
+		print(v)
 
 
-def repl():
+def repl(**kwargs):
 	import readline
 
 	while True:
@@ -813,17 +818,20 @@ def repl():
 		if not instring:
 			continue
 
-		do_one(instring)
+		do_one(instring, **kwargs)
 
 
 def main():
-	if len(sys.argv) <= 1:
-		return repl()
-	elif len(sys.argv) == 2:
-		do_one(sys.argv[1])
+	aparser = argparse.ArgumentParser()
+	aparser.add_argument('--exact-durations', action='store_const', const=True)
+	aparser.add_argument('expr', default=None, nargs='?')
+	args = aparser.parse_args()
+
+	kwargs = vars(args)
+	if args.expr is None:
+		repl(**kwargs)
 	else:
-		print('usage: %s [EXPR]' % sys.argv[0], file=sys.stderr)
-		sys.exit(1)
+		do_one(args.expr, **kwargs)
 
 # }}}
 
