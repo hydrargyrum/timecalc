@@ -300,20 +300,28 @@ class Number(Terminal):
 	def __add__(self, other):
 		if other.type == 'number':
 			return Number(n=self.value() + other.value())
+		raise TypeError()
+
+	__radd__ = __add__
 
 	def __sub__(self, other):
 		if other.type == 'number':
 			return Number(n=self.value() - other.value())
+		raise TypeError()
 
 	def __mul__(self, other):
 		if other.type == 'number':
 			return Number(n=self.value() * other.value())
 		elif other.type == 'duration':
-			return other * self
+			return NotImplemented
+		raise TypeError()
+
+	__rmul__ = __mul__
 
 	def __truediv__(self, other):
 		if other.type == 'number':
 			return Number(n=self.value() / other.value())
+		raise TypeError()
 
 	def __str__(self):
 		return str(self.value())
@@ -520,14 +528,18 @@ class BaseDuration(object):
 		self.delta = delta
 
 	def __add__(self, other):
-		if other.type == 'datetime':
-			return other + self
-		elif other.type == 'duration':
+		if other.type == 'duration':
 			return Duration(self.delta + other.delta)
+		elif other.type == 'datetime':
+			return NotImplemented
+		raise TypeError()
+
+	__radd__ = __add__
 
 	def __sub__(self, other):
 		if other.type == 'duration':
 			return Duration(self.delta - other.delta)
+		raise TypeError()
 
 	def __repr__(self):
 		return repr(self.delta2parts(self.delta))
@@ -579,6 +591,9 @@ class RelativedeltaDuration(BaseDuration):
 			else:
 				d = {k: getattr(self.delta, k) * other for k in self.KEYS}
 				return RelativedeltaDuration(relativedelta(**d).normalized())
+		raise TypeError()
+
+	__rmul__ = __mul__
 
 	def __truediv__(self, other):
 		if other.type == 'duration':
@@ -586,6 +601,7 @@ class RelativedeltaDuration(BaseDuration):
 			return Number(n=factor)
 		elif other.type == 'number':
 			return self * (Number(n=1) / other)
+		raise TypeError()
 
 	def approx(self):
 		delta = self.to_timedelta()
@@ -666,6 +682,9 @@ class Datetime(NonTerminal):
 		if other.type == 'duration':
 			dt = self.datetime + other.delta
 			return Datetime(dt)
+		raise TypeError()
+
+	__radd__ = __add__
 
 	def __sub__(self, other):
 		if other.type == 'duration':
@@ -674,12 +693,7 @@ class Datetime(NonTerminal):
 		elif other.type == 'datetime':
 			delta = relativedelta(self.datetime, other.datetime)
 			return Duration(delta)
-
-	def __mul__(self, other):
-		pass
-
-	def __truediv__(self, other):
-		pass
+		raise TypeError()
 
 
 class NumDuration(NonTerminal):
@@ -788,9 +802,11 @@ def do_compute(ast):
 		op, left, right = ast
 		left = do_compute(left)
 		right = do_compute(right)
-		res = op.apply(left, right)
-		if res is None:
-			raise BadOperand(op, left, right)
+
+		try:
+			res = op.apply(left, right)
+		except TypeError as e:
+			raise BadOperand(op, left, right) from e
 		return res
 	else:
 		return ast
