@@ -82,6 +82,8 @@ class TestParseMethods(unittest.TestCase):
 		self.assertEqual(compute_from_string('4 * 1 hour + 1 hour').delta, RD(hours=5))
 		self.assertEqual(compute_from_string('4 * 1 hour, 2 seconds').delta, RD(hours=4, seconds=8))
 
+		self.assertEqual(compute_from_string('1 hour / 2').delta, RD(minutes=30))
+
 		mixed = compute_from_string('2 hours - 1 hour, 1 second')
 		self.assertEqual(mixed.delta, RD(hours=1, seconds=-1))
 		self.assertEqual(mixed.approx().delta, RD(minutes=59, seconds=59))

@@ -555,10 +555,12 @@ class RelativedeltaDuration(BaseDuration):
 
 		return relativedelta(**items)
 
+	KEYS = ('years', 'months', 'days', 'hours', 'minutes', 'seconds')
+
 	@classmethod
 	def delta2parts(cls, delta):
 		items = OrderedDict()
-		for k in ('years', 'months', 'days', 'hours', 'minutes', 'seconds'):
+		for k in cls.KEYS:
 			v = getattr(delta, k, 0)
 			if v:
 				items[k] = v
@@ -571,14 +573,19 @@ class RelativedeltaDuration(BaseDuration):
 
 	def __mul__(self, other):
 		if other.type == 'number':
-			return RelativedeltaDuration(self.delta * other.value())
+			other = other.value()
+			if int(other) == int:
+				return RelativedeltaDuration(self.delta * other)
+			else:
+				d = {k: getattr(self.delta, k) * other for k in self.KEYS}
+				return RelativedeltaDuration(relativedelta(**d).normalized())
 
 	def __truediv__(self, other):
 		if other.type == 'duration':
 			factor = self.to_timedelta().total_seconds() / other.to_timedelta().total_seconds()
 			return Number(n=factor)
 		elif other.type == 'number':
-			return RelativedeltaDuration(self.delta / other.value())
+			return self * (Number(n=1) / other)
 
 	def approx(self):
 		delta = self.to_timedelta()
