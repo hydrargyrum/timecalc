@@ -95,6 +95,8 @@ In EBNF format::
 Examples
 ++++++++
 
+These are example of the datetimes and durations formats accepted by timecalc::
+
 	now
 	today
 	epoch
