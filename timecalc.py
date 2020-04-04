@@ -330,6 +330,7 @@ class Number(Terminal):
 @register
 class Unit(Terminal):
 	re = re.compile(
+	'(?P<microseconds>microseconds?|us)|'
 	'(?P<milliseconds>milliseconds?|ms)|'
 	'(?P<seconds>seconds?|secs?|s)|'
 	'(?P<minutes>minutes?|mins?)|'
@@ -427,10 +428,18 @@ class Date(Terminal):
 class Time(Terminal):
 	re = re.compile(r'''(?P<hour>\d{1,2})
 	(?:
-		(?P<_timesep>[:.])(?P<minute>\d{2})
-		(?:(?P=_timesep)(?P<second>\d{2}))?
-		\s*(?P<ampm>am|pm)?|
-
+		(?P<_timesep>[:.])
+		(?P<minute>\d{2})
+		(?:
+			(?P=_timesep)
+			(?P<second>\d{2})
+			(?:
+				\.(?P<microsecond>\d{6})|
+				\.(?P<millisecond>\d{3})
+			)?
+		)?
+		\s*(?P<ampm>am|pm)?
+		|
 		\s*(?P<ampm_2>am|pm)
 	)''', re.X)
 
@@ -438,13 +447,15 @@ class Time(Terminal):
 		h = int(self.d.get('hour', 0))
 		m = int(self.d.get('minute', 0))
 		s = int(self.d.get('second', 0))
+		ms = int(self.d.get('millisecond', 0))
+		us = int(self.d.get('microsecond', 0))
 		ampm = self.d.get('ampm')
 		if ampm:
 			if ampm == 'am' and h == 12:
 				h = 0
 			elif ampm == 'pm' and h != 12:
 				h += 12
-		return datetime.time(h, m, s)
+		return datetime.time(h, m, s, ms * 1000 + us)
 
 	def value(self):
 		try:
@@ -467,6 +478,7 @@ class Minus(Terminal):
 	def apply(left, right):
 		return left - right
 
+
 @register
 class Plus(Terminal):
 	re = re.compile(r'\+')
@@ -474,6 +486,7 @@ class Plus(Terminal):
 	@staticmethod
 	def apply(left, right):
 		return left + right
+
 
 @register
 class Multiplication(Terminal):
@@ -565,9 +578,13 @@ class RelativedeltaDuration(BaseDuration):
 				raise DuplicateUnit(token=u)
 			items[u.value()] = n.value()
 
+		if 'milliseconds' in items:
+			items.setdefault('microseconds', 0)
+			items['microseconds'] += items.pop('milliseconds') * 1000
+
 		return relativedelta(**items)
 
-	KEYS = ('years', 'months', 'days', 'hours', 'minutes', 'seconds')
+	KEYS = ('years', 'months', 'days', 'hours', 'minutes', 'seconds', 'microseconds')
 
 	@classmethod
 	def delta2parts(cls, delta):
@@ -576,12 +593,18 @@ class RelativedeltaDuration(BaseDuration):
 			v = getattr(delta, k, 0)
 			if v:
 				items[k] = v
+
+		if 'microseconds' in items and not items['microseconds'] % 1000:
+			# milliseconds are easier to read than thousands of microseconds
+			items['milliseconds'] = items.pop('microseconds') // 1000
+
 		return items
 
 	def to_timedelta(self):
 		days = self.delta.days + self.delta.months * 30 + self.delta.years * 365
 		secs = self.delta.seconds + self.delta.minutes * 60 + self.delta.hours * 3600
-		return datetime.timedelta(days=days, seconds=secs)
+		usecs = self.delta.microseconds
+		return datetime.timedelta(days=days, seconds=secs, microseconds=usecs)
 
 	def __mul__(self, other):
 		if other.type == 'number':
@@ -605,7 +628,7 @@ class RelativedeltaDuration(BaseDuration):
 
 	def approx(self):
 		delta = self.to_timedelta()
-		return RelativedeltaDuration(relativedelta(days=delta.days, seconds=delta.seconds))
+		return RelativedeltaDuration(relativedelta(days=delta.days, seconds=delta.seconds, microseconds=delta.microseconds))
 
 
 Duration = RelativedeltaDuration
@@ -857,6 +880,7 @@ def main():
 		do_one(args.expr, **kwargs)
 
 # }}}
+
 
 if __name__ == '__main__':
 	main()
