@@ -15,6 +15,9 @@ except ImportError:
 	sys.exit(1)
 
 
+__version__ = "0.9.1"
+
+
 # {{{ parser lib
 
 TERMINAL_CLASSES = []

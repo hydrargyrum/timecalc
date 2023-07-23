@@ -130,7 +130,7 @@ FAQ
 Dependencies
 ------------
 
-timecalc depends on `relativedelta <http://dateutil.readthedocs.io/en/stable/relativedelta.html>`_ for computing durations.
+timecalc depends on `relativedelta <https://dateutil.readthedocs.io/en/stable/relativedelta.html>`_ for computing durations.
 
 License
 -------
