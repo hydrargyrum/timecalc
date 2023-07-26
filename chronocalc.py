@@ -280,7 +280,7 @@ def do_parser(entry, tokens):
 
 # }}}
 # }}}
-# {{{ timecalc parser
+# {{{ chronocalc parser
 
 @register
 class Number(Terminal):
@@ -821,7 +821,7 @@ class DuplicateUnit(ParserException):
 	reason = 'Unit is already used'
 
 # }}}
-# {{{ timecalc main
+# {{{ chronocalc main
 
 def do_compute(ast):
 	if isinstance(ast, list):

@@ -8,7 +8,7 @@ import unittest
 
 from dateutil.relativedelta import relativedelta as RD
 
-from timecalc import *
+from chronocalc import *
 
 
 class TestParseMethods(unittest.TestCase):

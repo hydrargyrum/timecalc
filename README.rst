@@ -1,7 +1,7 @@
-timecalc
-========
+chronocalc
+==========
 
-timecalc is a basic calculator for time and durations. It can:
+chronocalc is a basic calculator for time and durations. It can:
 
 * add durations::
 
@@ -48,7 +48,7 @@ timecalc is a basic calculator for time and durations. It can:
 Invocation
 ----------
 
-If given an argument, timecalc will eval it and exit, else, it will start a REPL (Read-Eval-Print Loop) prompt to eval multiple expressions.
+If given an argument, chronocalc will eval it and exit, else, it will start a REPL (Read-Eval-Print Loop) prompt to eval multiple expressions.
 
 Input format
 ------------
@@ -95,7 +95,7 @@ In EBNF format::
 Examples
 ++++++++
 
-These are example of the datetimes and durations formats accepted by timecalc::
+These are example of the datetimes and durations formats accepted by chronocalc::
 
 	now
 	today
@@ -130,9 +130,9 @@ FAQ
 Dependencies
 ------------
 
-timecalc depends on `relativedelta <https://dateutil.readthedocs.io/en/stable/relativedelta.html>`_ for computing durations.
+chronocalc depends on `relativedelta <https://dateutil.readthedocs.io/en/stable/relativedelta.html>`_ for computing durations.
 
 License
 -------
 
-timecalc is licensed under the `WTFPLv2 <http://wtfpl.net>`_. See COPYING.WTFPL file.
+chronocalc is licensed under the `WTFPLv2 <http://wtfpl.net>`_. See COPYING.WTFPL file.
