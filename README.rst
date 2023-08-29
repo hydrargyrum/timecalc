@@ -127,6 +127,13 @@ FAQ
 * Q: When inputting date "20150101", it is parsed as number "20150101".
 * A: That's not a question, and that's effectively a number. To force a datetime form, use "20150101 00:00" instead.
 
+Install
+-------
+
+With pipx::
+
+	pipx install chronocalc
+
 Dependencies
 ------------
 
